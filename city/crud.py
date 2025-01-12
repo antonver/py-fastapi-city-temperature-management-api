@@ -19,7 +19,7 @@ async def create_city(db: AsyncSession, city: schemas.CreateCity):
     )
     result = await db.execute(query)
     await db.commit()
-    resp = {**city.dict(), "id": result.lastrowid}
+    resp = {**city.dict(), "id": result.inserted_primary_key}
     return resp
 
 
@@ -31,7 +31,7 @@ async def update_city(db: AsyncSession, city_id: int, city: schemas.UpdateCity):
 
     if selected_city is None:
         # Handle case where city is not found
-        return HTTPException(status_code=404, detail=f"City with id {city_id} not found")
+        raise HTTPException(status_code=404, detail=f"City with id {city_id} not found")
 
     # Perform the update with non-null values from the request
     update_query = update(models.City).where(models.City.id == city_id).values(
@@ -58,4 +58,6 @@ async def get_city(db: AsyncSession, city_id: int):
     query = select(models.City).where(models.City.id == city_id)
     result = await db.execute(query)
     b = result.fetchone()
+    if b is None:
+        raise HTTPException(status_code=404, detail=f"City with id {city_id} not found")
     return [b[0]]
